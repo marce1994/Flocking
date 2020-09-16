@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Meat : iRule
+public class Eat : iRule
 {
     public int minDist { get; set; }
     public int maxDist { get; set; }

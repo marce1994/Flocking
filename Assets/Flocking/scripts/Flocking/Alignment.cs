@@ -36,7 +36,7 @@ public class Alignment : iRule
                 float dist      = Vector3.SqrMagnitude( dif );
                 if ( dist <= maxDist * maxDist && dist >= minDist * minDist )
                 {
-                    result      += other.velocity;
+                    result      += other.direction;
                     count++;
                 }
             }

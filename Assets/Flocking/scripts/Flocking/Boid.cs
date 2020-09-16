@@ -5,7 +5,7 @@ using UnityEngine;
 public class Boid : MonoBehaviour 
 {
     public Vector3 position { get; set; }
-    public Vector3 velocity { set; get; }
+    public Vector3 direction { set; get; }
     public Vector3 lookat   { get; set; }
     public Waypoint waypoint { get; set; }
 
@@ -21,11 +21,13 @@ public class Boid : MonoBehaviour
 
     private void Awake()
     {
-        enemyPosition = FindObjectOfType<EnemyManager>().gameObject.transform;
         StartCoroutine(WaitAndFindToEat(1));
+
+        var enemy = FindObjectOfType<EnemyManager>();
+        if (enemy == null) return;
+            enemyPosition = enemy.gameObject.transform;
     }
 
-    // every 2 seconds perform the print()
     private IEnumerator WaitAndFindToEat(float waitTime)
     {
         while (true)
@@ -42,9 +44,8 @@ public class Boid : MonoBehaviour
         }
     }
 
-    void Update( )
+    void Update()
     {
-        //we cannot request the transform in a thread other than the main thread, so we set the position here.
         position = transform.position;
         transform.LookAt( lookat );
         if (flower == null) meatPosition = null;
@@ -53,7 +54,7 @@ public class Boid : MonoBehaviour
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.green;
-        Gizmos.DrawRay(position, velocity.normalized);
+        Gizmos.DrawRay(position, direction.normalized);
         Gizmos.color = Color.blue;
         Gizmos.DrawRay(position, lookat.normalized);
     }

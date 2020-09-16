@@ -12,18 +12,18 @@ public class KeepInsideBok : iRule
     {
         Boid currentBoid = boids[current];
 
-        float minx = currentBoid.boxPosition.x - currentBoid.boxSize.x/2;
-        float miny = currentBoid.boxPosition.y - currentBoid.boxSize.y/2;
-        float minz = currentBoid.boxPosition.z - currentBoid.boxSize.z/2;
-        
-        float maxx = currentBoid.boxPosition.x + currentBoid.boxSize.x/2;
-        float maxy = currentBoid.boxPosition.y + currentBoid.boxSize.y/2;
+        float minx = currentBoid.boxPosition.x - currentBoid.boxSize.x / 2;
+        float miny = currentBoid.boxPosition.y - currentBoid.boxSize.y / 2;
+        float minz = currentBoid.boxPosition.z - currentBoid.boxSize.z / 2;
+
+        float maxx = currentBoid.boxPosition.x + currentBoid.boxSize.x / 2;
+        float maxy = currentBoid.boxPosition.y + currentBoid.boxSize.y / 2;
         float maxz = currentBoid.boxPosition.z + currentBoid.boxSize.z / 2;
 
         Vector3 pos = currentBoid.transform.position;
-        return
-            (pos.x > minx && pos.x < maxx &&
-            pos.y > miny && pos.y < maxy &&
-            pos.z > minz && pos.z < maxz) ? Vector3.zero : -pos.normalized * scalar;
+
+        bool inside = (pos.x > minx && pos.x < maxx && pos.y > miny && pos.y < maxy && pos.z > minz && pos.z < maxz);
+
+        return inside ? Vector3.zero : -pos.normalized * scalar;
     }
 }

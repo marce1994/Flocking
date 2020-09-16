@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class RunAway : iRule
+public class Scape : iRule
 {
     public int minDist { get; set; }
     public int maxDist { get; set; }

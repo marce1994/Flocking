@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
@@ -38,13 +39,13 @@ public class GameManager : MonoBehaviour
 
     List<iRule> behaviours;
 
-    Alignment _alignment;
-    Cohesion _cohesion;
-    Separation _separation;
-    Target _target;
-    RunAway _runAway;
-    Meat _meat;
-    KeepInsideBok _keepInsideBok;
+    //Alignment _alignment;
+    //Cohesion _cohesion;
+    //Separation _separation;
+    //Target _target;
+    //RunAway _runAway;
+    //Meat _meat;
+    //KeepInsideBok _keepInsideBok;
 
     private List<Waypoint> waypoints;
     private bool isEnemy = false;
@@ -54,58 +55,68 @@ public class GameManager : MonoBehaviour
     public Slider separation;
     public Slider target;
 
+    // Refactor -> no quiero abstraer y reescribir cosas :)
+    private void AddBehaviour<T>(int viewRange, int weight) where T : iRule
+    {
+        if (behaviours == null)
+            behaviours = new List<iRule>();
+
+        T behaviour = (T)Activator.CreateInstance(typeof(T));
+        
+        behaviour.minDist = 1;
+        behaviour.maxDist = viewRange;
+        behaviour.scalar = weight;
+        
+        behaviours.Add(behaviour);
+    }
+
     private void Awake()
     {
         waypoints = FindObjectsOfType<Waypoint>().ToList();
+        boids = new List<Boid>();
         cameraTransform = Camera.main.transform;
 
-        boids = new List<Boid>();
-        _alignment = new Alignment();
-        _cohesion = new Cohesion();
-        _separation = new Separation();
-        _target = new Target();
-        _runAway = new RunAway();
-        _meat = new Meat();
-        _keepInsideBok = new KeepInsideBok();
+        int viewRange = 20;
 
-        _alignment.maxDist = _cohesion.maxDist = _separation.maxDist = _target.maxDist = _runAway.maxDist = 20;
-        _alignment.minDist = _cohesion.minDist = _separation.minDist = _target.minDist = _meat.minDist = 1;
-        _meat.maxDist = 50;
-        _runAway.maxDist = 10;
-
-        _alignment.scalar = 1;
-        alignment.value = 1;
-        _cohesion.scalar = 1;
-        cohesion.value = 1;
-        _separation.scalar = 1;
-        separation.value = 1;
-        _target.scalar = 2;
-        target.value = 2;
-
-        _runAway.scalar = 10;
-        _meat.scalar = 5;
-        _keepInsideBok.scalar = 100;
+        AddBehaviour<Alignment>(viewRange, 1);
+        AddBehaviour<Cohesion>(viewRange, 1);
+        AddBehaviour<Separation>(viewRange, 1);
+        AddBehaviour<Target>(viewRange, 1);
+        AddBehaviour<Scape>(viewRange, 8);
+        AddBehaviour<Eat>(viewRange, 8);
+        AddBehaviour<KeepInsideBok>(viewRange, 100);
 
         alignment.onValueChanged.AddListener((x)=> {
-            _alignment.scalar = (int)x;
+            var alignments = behaviours.Where(y => y is Alignment);
+            foreach (var alignment in alignments)
+            {
+                alignment.scalar = (int)x;
+            }
         });
 
         cohesion.onValueChanged.AddListener((x) => {
-            _cohesion.scalar = (int)x;
+            var alignments = behaviours.Where(y => y is Cohesion);
+            foreach (var alignment in alignments)
+            {
+                alignment.scalar = (int)x;
+            }
         });
 
         separation.onValueChanged.AddListener((x) => {
-            _separation.scalar = (int)x;
+            var alignments = behaviours.Where(y => y is Separation);
+            foreach (var alignment in alignments)
+            {
+                alignment.scalar = (int)x;
+            }
         });
 
         target.onValueChanged.AddListener((x) => {
-            _target.scalar = (int)x;
+            var alignments = behaviours.Where(y => y is Target);
+            foreach (var alignment in alignments)
+            {
+                alignment.scalar = (int)x;
+            }
         });
-    }
-
-    private void AddBehaviour(iRule rule, int weight)
-    {
-        
     }
 
     private void OnDrawGizmos()
@@ -118,7 +129,7 @@ public class GameManager : MonoBehaviour
     {
         var gameObject = new GameObject();
 
-        gameObject.transform.position = Random.insideUnitSphere * Random.Range(1, 100);
+        gameObject.transform.position = UnityEngine.Random.insideUnitSphere * UnityEngine.Random.Range(1, 100);
         
         GameObject buterfly = Instantiate(butterflyPrefab);
         buterfly.transform.position = gameObject.transform.position;
@@ -126,9 +137,9 @@ public class GameManager : MonoBehaviour
         buterfly.transform.parent = gameObject.transform;
 
         Boid boid = gameObject.AddComponent<Boid>();
-        boid.velocity = Random.insideUnitSphere.normalized;
+        boid.direction = UnityEngine.Random.insideUnitSphere.normalized;
         boid.waypoint = waypoints.First(x => x.name == "Point");
-        boid.speed = Random.Range(10,25);
+        boid.speed = UnityEngine.Random.Range(10,25);
         boid.boxPosition = boxPosition;
         boid.boxSize = boxSize;
 
@@ -146,41 +157,29 @@ public class GameManager : MonoBehaviour
     void IterateBoids() {
         Vector3 middleOfFlock = Vector3.zero;
         int flockCount = 0;
-        //run through all boids.
+
         for (int i = boids.Count - 1; i >= 0; --i)
         {
-            Boid b = boids[i];
+            Boid boid = boids[i];
             flockCount++;
-            middleOfFlock += b.position;
-            //get the boids current velocity.
-            Vector3 velocity = b.velocity;
+            middleOfFlock += boid.position;
 
-            //add the influences of neighboring boids to the velocity.
-            velocity += _alignment.getResult(boids, i);
-            velocity += _cohesion.getResult(boids, i);
-            velocity += _separation.getResult(boids, i);
-            velocity += _target.getResult(boids, i);
-            velocity += _runAway.getResult(boids, i);
-            velocity += _meat.getResult(boids, i);
-            velocity += _keepInsideBok.getResult(boids, i);
+            Vector3 rendToDirection = boid.direction;
 
-            //normalize the velocity and make sure that the boids new velocity is updated.
-            velocity.Normalize();
-            b.velocity = velocity;
+            foreach (var behaviour in behaviours)
+            {
+                rendToDirection += behaviour.getResult(boids, i);
+            }
 
-            b.lookat = b.position + velocity;
+            rendToDirection.Normalize();
+            boid.direction = rendToDirection;
+            boid.lookat = boid.position + rendToDirection;
         }
 
         if(boids.Count > 0)
-        {
-            //cameraTransform.position = middleOfFlock / flockCount;
             cameraTransform.LookAt(middleOfFlock / flockCount);
-        }
-
+        
         for (int i = boids.Count - 1; i >= 0; --i)
-        {
-            //update the boids position in the mainthread.
-            boids[i].transform.position += boids[i].velocity * Time.deltaTime * boids[i].speed;
-        }
+            boids[i].transform.position += boids[i].direction * Time.deltaTime * boids[i].speed;
     }
 }
