@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 public class Eat : iRule
@@ -22,9 +21,12 @@ public class Eat : iRule
         if (Vector3.Distance(currentBoid.transform.position, currentBoid.meatPosition.position) < minDist)
         {
             bool eat = currentBoid.flower.Eat();
-            
-            if(eat)
-                currentBoid.transform.localScale += Vector3.one/3;
+
+            if (eat) {
+                var instance = GameManager.GetInstance();
+                instance.InstantiateEnemy(currentBoid.gameObject.transform.position);
+                instance.DeleteBoid(currentBoid);
+            }
         }
 
         return result;

@@ -21,19 +21,40 @@ public class Boid : MonoBehaviour
 
     private void Awake()
     {
-        StartCoroutine(WaitAndFindToEat(1));
-
-        var enemy = FindObjectOfType<EnemyManager>();
-        if (enemy == null) return;
-            enemyPosition = enemy.gameObject.transform;
+        StartCoroutine(UpdateBoidReferences(0.1f));
     }
 
-    private IEnumerator WaitAndFindToEat(float waitTime)
+    private IEnumerator UpdateBoidReferences(float waitTime)
     {
         while (true)
         {
             yield return new WaitForSeconds(waitTime);
-            flower = FindObjectsOfType<FlowerManager>().FirstOrDefault(x => x.CanEat);
+
+            var flowers = FindObjectsOfType<FlowerManager>().Where(x => x.CanEat);
+            var closestFlower = flowers.FirstOrDefault();
+            foreach (var flower in flowers)
+            {
+                var newDistance = Vector3.Distance(gameObject.transform.position, flower.transform.position);
+                var oldDistance = Vector3.Distance(gameObject.transform.position, closestFlower.transform.position);
+                if (newDistance < oldDistance)
+                    closestFlower = flower;
+            }
+
+            flower = closestFlower;
+
+            var enemies = FindObjectsOfType<EnemyManager>();
+            var closestEnemy = enemies.FirstOrDefault();
+            foreach (var enemy in enemies)
+            {
+                var newDistance = Vector3.Distance(gameObject.transform.position, enemy.transform.position);
+                var oldDistance = Vector3.Distance(gameObject.transform.position, closestEnemy.transform.position);
+                if (newDistance < oldDistance)
+                    closestEnemy = enemy;
+            }
+            
+            if (closestEnemy != null)
+                enemyPosition = closestEnemy.transform;
+
             if (flower == null)
             {
                 meatPosition = null;
@@ -47,8 +68,8 @@ public class Boid : MonoBehaviour
     void Update()
     {
         position = transform.position;
-        transform.LookAt( lookat );
-        if (flower == null) meatPosition = null;
+        transform.LookAt(position + direction);
+        transform.position += direction * Time.deltaTime * speed;
     }
 
     private void OnDrawGizmos()
